@@ -1,16 +1,19 @@
 const express = require("express");
 const router = new express.Router();
 const connection = require("../db/connection");
-const { sendOtpOnEmailForVerifyAccount } = require("../emails/account");
+const {
+  sendOtpOnEmailForVerifyAccount,
+  decrypt,
+} = require("../emails/account");
 
 router.post("/schoolRegistration", (req, res) => {
   if (req) {
     const otp = Math.floor(100000 + Math.random() * 900000);
     let credentialData = {
       email: req.body.email,
-      pass_word: req.body.password, 
-      user_type: "Admin", 
-      otp
+      pass_word: decrypt(req.body.password),
+      user_type: "Admin",
+      otp,
     };
     try {
       connection.query(
@@ -18,10 +21,10 @@ router.post("/schoolRegistration", (req, res) => {
         credentialData,
         (err, result) => {
           if (err) {
-              res.status(500).send({
-                  status: false,
-                  message: err.sqlMessage
-              });
+            res.status(500).send({
+              status: false,
+              message: err.sqlMessage,
+            });
           } else {
             let insertedId = result.insertId;
             const profileData = {
@@ -30,7 +33,7 @@ router.post("/schoolRegistration", (req, res) => {
               admin_name: req.body.adminName,
               aadhar_number: req.body.adminAdhar,
               school_registration_no: req.body.schoolRegistrationNo,
-              school_type:req.body.schoolType,
+              school_type: req.body.schoolType,
               admin_contact_no: req.body.adminContactNo,
               school_contact_no: req.body.schoolContactNo,
               created_on: new Date(),
@@ -86,52 +89,52 @@ router.post("/schoolRegistration", (req, res) => {
 });
 
 router.post("/verifyOTP", async (req, res) => {
-    try {
-        var otp = req.body.otp;
-        var email = req.body.email;
-        await connection.query(
-            "SELECT otp FROM credentials WHERE email = ? and otp =?",
-            [email, otp],
-            async (err, results, fields) => {
+  try {
+    var otp = req.body.otp;
+    var email = req.body.email;
+    await connection.query(
+      "SELECT otp FROM credentials WHERE email = ? and otp =?",
+      [email, otp],
+      async (err, results, fields) => {
+        if (err) {
+          res.status(500).send({
+            status: false,
+            message: err.sqlMessage,
+          });
+        } else {
+          if (results.length) {
+            await connection.query(
+              "UPDATE credentials SET is_verified = ? WHERE email = ?",
+              [1, email],
+              async (err, results, fields) => {
                 if (err) {
-                    res.status(500).send({
-                        status: false,
-                        message: err.sqlMessage,
-                    });
+                  res.status(500).send({
+                    status: false,
+                    message: err.sqlMessage,
+                  });
                 } else {
-                    if (results.length) {
-                        await connection.query(
-                            "UPDATE credentials SET is_verified = ? WHERE email = ?",
-                            [1, email],
-                            async (err, results, fields) => {
-                                if (err) {
-                                    res.status(500).send({
-                                        status: false,
-                                        message: err.sqlMessage,
-                                    });
-                                } else {
-                                    res.status(200).send({
-                                        status: true,
-                                        message: "Verification successfull"
-                                    });
-                                }
-                            }
-                        );
-                    } else {
-                        res.status(403).send({
-                            status: false,
-                            message: "Invalid OTP"
-                        });
-                    }
+                  res.status(200).send({
+                    status: true,
+                    message: "Verification successfull",
+                  });
                 }
-            }
-        );
-    } catch (error) {
-      res.status(400).send({
-        status: false,
-        message: error.message
-      });
-    }
+              }
+            );
+          } else {
+            res.status(403).send({
+              status: false,
+              message: "Invalid OTP",
+            });
+          }
+        }
+      }
+    );
+  } catch (error) {
+    res.status(400).send({
+      status: false,
+      message: error.message,
+    });
+  }
 });
 
 module.exports = router;
