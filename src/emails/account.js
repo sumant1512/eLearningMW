@@ -1,150 +1,163 @@
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
+const CryptoJS = require("crypto-js");
 
 var transporter = nodemailer.createTransport({
-  service: 'gmail',
+  service: "gmail",
   auth: {
     user: process.env.GMAIL_ID,
-    pass: process.env.GMAIL_PASS
-  }
+    pass: process.env.GMAIL_PASS,
+  },
 });
 
 const sendWelcomeEmail = (name, email, password, res) => {
-    transporter.sendMail({
-        from: 'tcslearningapplication@gmail.com',
-        to: email,
-        subject: 'Registered Successfully',
-        text: `Welcome to Shiksha Durat, ${name}
+  transporter.sendMail(
+    {
+      from: "tcslearningapplication@gmail.com",
+      to: email,
+      subject: "Registered Successfully",
+      text: `Welcome to Shiksha Durat, ${name}
+             Here is your credential: 
+             Username: ${email}
+             Password: ${password}
+             Thanks & Regards
+             Shiksha Durat Team `,
+    },
+    (error) => {
+      if (error) {
+        res.status(400).send({
+          status: false,
+          message: "Something went wrong while sending Email",
+        });
+      } else {
+        res.status(200).send({
+          status: true,
+          message: "Student added Successfully",
+        });
+      }
+    }
+  );
+};
 
-Here is your credential: 
+const sendOtpOnEmailForVerifyAccount = (schoolName, email, otp, res) => {
+  transporter.sendMail(
+    {
+      from: "tcslearningapplication@gmail.com",
+      to: email,
+      subject: "OTP Generated",
+      text: `Welcome to OnlineSchool, ${schoolName}
+             Here is your OTP: ${otp}
+             Click here to verify:https://siksha-durat.netlify.app/verification?email=${email}
+             Thanks & Regards
+             Shiksha Durat Team`,
+    },
+    (error) => {
+      if (error) {
+        res.status(400).send({
+          status: false,
+          message: "Something went wrong while sending Email",
+        });
+      } else {
+        res.status(200).send({
+          status: true,
+          message: "Otp has been send to registered email id.",
+        });
+      }
+    }
+  );
+};
 
-Username: ${email}
-Password: ${password}
+const sendOtpOnEmailForForgetPassword = (email, otp, res) => {
+  transporter.sendMail(
+    {
+      from: "tcslearningapplication@gmail.com",
+      to: email,
+      subject: "OTP for reset password",
+      text: `Welcome to OnlineSchool,
+             Here is your OTP: ${otp}
+             Thanks & Regards
+             Shiksha Durat Team `,
+    },
+    (error) => {
+      if (error) {
+        res.status(400).send({
+          status: false,
+          message: "Something went wrong while sending Email",
+        });
+      } else {
+        res.status(200).send({
+          status: true,
+          message: "Otp has been send to registered email id.",
+        });
+      }
+    }
+  );
+};
 
-Thanks & Regards
-Shiksha Durat Team `
+const sendSessionNotification = (name, email, res) => {
+  transporter.sendMail(
+    {
+      from: "tcslearningapplication@gmail.com",
+      to: email,
+      subject: "Session started",
+      text: `Dear ${name},
+             Your session going to start please join as soon as possible
+             Thanks & Regards
+             Shiksha Durat Team `,
+    },
+    (error) => {
+      if (error) {
+        res.status(400).send({
+          status: false,
+          message: "Something went wrong while sending Email",
+        });
+      }
+    }
+  );
+};
 
-    },(error) => {
-        if(error){
-            res.status(400).send({
-                status: false,
-                message: "Something went wrong while sending Email",
-              });
-        }
-        else{
-            res.status(200).send({
-                status: true,
-                message: "Student added Successfully",
-              });
-        }
-    });
-}
+const sendlectureVideoNotification = (name, email, res) => {
+  transporter.sendMail(
+    {
+      from: "tcslearningapplication@gmail.com",
+      to: email,
+      subject: "New Video Lecture Uploaded!",
+      text: `Dear ${name},
+             New video lecture has been uploaded. Do watch the video!
+             Thanks & Regards
+             Shiksha Durat Team`,
+    },
+    (error) => {
+      if (error) {
+        res.status(400).send({
+          status: false,
+          message: "Something went wrong while sending Email",
+        });
+      }
+    }
+  );
+};
 
-const sendOtpOnEmailForVerifyAccount = (schoolName, email, otp,res) => {
-    transporter.sendMail({
-        from: 'tcslearningapplication@gmail.com',
-        to: email,
-        subject: 'OTP Generated',
-        text: `Welcome to OnlineSchool, ${schoolName}
+const encypt = (data) => {
+  const test = "w3lcom2blkcn!";
+  return CryptoJS.AES.encrypt(
+    data.trim(),
+    process.env.SECRET_CRYPTO_KEY.trim()
+  ).toString();
+};
 
-Here is your OTP: ${otp}
-Click here to verify:https://siksha-durat.netlify.app/verification?email=${email}
-
-
-Thanks & Regards
-Shiksha Durat Team`
-
-    },(error) => {
-        if(error){
-            res.status(400).send({  
-                status: false,
-                message: "Something went wrong while sending Email",
-              });
-        }
-        else{
-            
-            res.status(200).send({
-                status: true,
-                message: "Otp has been send to registered email id.",
-              });
-        }
-    });
-}
-
-const sendOtpOnEmailForForgetPassword = (email,otp,res) => {
-    transporter.sendMail({
-        from: 'tcslearningapplication@gmail.com',
-        to: email,
-        subject: 'OTP for reset password',
-        text: `Welcome to OnlineSchool,
-
-Here is your OTP: ${otp}
-
-Thanks & Regards
-Shiksha Durat Team `
-
-    },(error) => {
-        if(error){
-            res.status(400).send({  
-                status: false,
-                message: "Something went wrong while sending Email",
-              });
-        }
-        else{
-            
-            res.status(200).send({
-                status: true,
-                message: "Otp has been send to registered email id.",
-              });
-        }
-    });
-}
-
-const sendSessionNotification = (name, email,res) => {
-    transporter.sendMail({
-        from: 'tcslearningapplication@gmail.com',
-        to: email,
-        subject: 'Session started',
-        text: `Dear ${name},
-
-Your session going to start please join as soon as possible
-
-Thanks & Regards
-Shiksha Durat Team `
-    },(error) => {
-        if(error){
-            res.status(400).send({
-                status: false,
-                message: "Something went wrong while sending Email"
-              });
-        }
-    });
-}
-
-const sendlectureVideoNotification = (name, email,res) => {
-    transporter.sendMail({
-        from: 'tcslearningapplication@gmail.com',
-        to: email,
-        subject: 'New Video Lecture Uploaded!',
-        text: `Dear ${name},
-
-New video lecture has been uploaded. Do watch the video!
-
-Thanks & Regards
-Shiksha Durat Team`
-    },(error) => {
-        if(error){
-            res.status(400).send({
-                status: false,
-                message: "Something went wrong while sending Email"
-              });
-        }
-    });
-}
+const decrypt = (data) => {
+  const test = "w3lcom2blkcn!";
+  return CryptoJS.AES.decrypt(data.trim(), test.trim()).toString(
+    CryptoJS.enc.Utf8
+  );
+};
 
 module.exports = {
-    sendWelcomeEmail,
-    sendOtpOnEmailForVerifyAccount,
-    sendOtpOnEmailForForgetPassword,
-    sendSessionNotification,
-    sendlectureVideoNotification
-}
+  sendWelcomeEmail,
+  sendOtpOnEmailForVerifyAccount,
+  sendOtpOnEmailForForgetPassword,
+  sendSessionNotification,
+  sendlectureVideoNotification,
+  encypt,
+  decrypt,
+};
