@@ -231,7 +231,7 @@ router.post("/studentRegistration", auth, async (req, res) => {
                     if (err) {
                       studentRegistrationError = err.sqlMessage;
                       connection.query(
-                        "DELETE FROM student_profile WHERE user_id = ?",
+                        "DELETE FROM student_profile WHERE student_id = ?",
                         insertedId,
                         (err) => {
                           if (err) {
@@ -253,6 +253,120 @@ router.post("/studentRegistration", auth, async (req, res) => {
                                   res.status(500).send({
                                     status: false,
                                     message: studentRegistrationError,
+                                  });
+                                }
+                              }
+                            );
+                          }
+                        }
+                      );
+                    } else {
+                      var full_name =
+                        req.body.firstName + " " + req.body.lastName;
+                      sendWelcomeEmail(
+                        full_name,
+                        req.body.email,
+                        password,
+                        res
+                      );
+                    }
+                  }
+                );
+              }
+            }
+          );
+        }
+      }
+    );
+  } catch (error) {
+    res.status(400).send({
+      status: false,
+      message: error.message,
+    });
+  }
+});
+
+router.post("/teacherRegistration", auth, async (req, res) => {
+  try {
+    var password = Math.floor(100000 + Math.random() * 900000);
+    let credentialData = {
+      email: req.body.email,
+      pass_word: password,
+      is_verified: 1,
+      is_approved: 1,
+      user_type: "Teacher",
+      otp: 000,
+    };
+    await connection.query(
+      "insert into credentials set ?",
+      credentialData,
+      (err, result) => {
+        if (err) {
+          res.status(500).send({
+            status: false,
+            message: err.sqlMessage,
+          });
+        } else {
+          let insertedId = result.insertId;
+          var teacherDetails = {
+            teacher_id: insertedId,
+            email: req.body.email,
+            first_name: req.body.firstName,
+            last_name: req.body.lastName,
+            relatior_name: req.body.relatorName,
+            dob: req.body.dob,
+            teacher_address:
+              req.body.addressLineOne + ", " + req.body.addressLineTwo,
+            state: req.body.state,
+            city: req.body.city,
+            pin_code: req.body.postalCode,
+            gender: req.body.gender,
+            mobile_number: req.body.mobile,
+            registered_on: new Date(),
+          };
+          connection.query(
+            "insert into teacher_profile set ?",
+            teacherDetails,
+            async (err, results, fields) => {
+              if (err) {
+                res
+                  .status(500)
+                  .send({ status: false, message: err.sqlMessage });
+              } else {
+                let teacherSchoolConnection = {
+                  user_id: req.user_id,
+                  teacher_id: insertedId,
+                  assinged_on: new Date(),
+                };
+                connection.query(
+                  "insert into teacher_with_school set ?",
+                  teacherSchoolConnection,
+                  async (err, results, fields) => {
+                    if (err) {
+                      teacherRegistrationError = err.sqlMessage;
+                      connection.query(
+                        "DELETE FROM teacher_profile WHERE teacher_id = ?",
+                        insertedId,
+                        (err) => {
+                          if (err) {
+                            res.status(500).send({
+                              status: false,
+                              message: err.sqlMessage,
+                            });
+                          } else {
+                            connection.query(
+                              "DELETE FROM credentials WHERE  user_id = ?",
+                              insertedId,
+                              (err) => {
+                                if (err) {
+                                  res.status(500).send({
+                                    status: false,
+                                    message: err.sqlMessage,
+                                  });
+                                } else {
+                                  res.status(500).send({
+                                    status: false,
+                                    message: teacherRegistrationError,
                                   });
                                 }
                               }
@@ -371,6 +485,61 @@ router.delete("/removeStudent/:id", auth, async (req, res) => {
   }
 });
 
+//Remove Teacher from school
+router.delete("/removeTeacher/:id", auth, async (req, res) => {
+  try {
+    const _id = req.params.id;
+    connection.query(
+      "DELETE FROM teacher_with_school WHERE teacher_id = ?",
+      _id,
+      async (err, results, fields) => {
+        if (err) {
+          res.status(500).send({
+            status: false,
+            message: err.sqlMessage,
+          });
+        } else {
+          connection.query(
+            "DELETE FROM teacher_profile WHERE teacher_id = ?",
+            _id,
+            async (err, results, fields) => {
+              if (err) {
+                res.status(500).send({
+                  status: false,
+                  message: err.sqlMessage,
+                });
+              } else {
+                connection.query(
+                  "DELETE FROM credentials WHERE user_id = ?",
+                  _id,
+                  async (err, results, fields) => {
+                    if (err) {
+                      res.status(500).send({
+                        status: false,
+                        message: err.sqlMessage,
+                      });
+                    } else {
+                      res.status(200).send({
+                        status: true,
+                        message: "Teacher Removed",
+                      });
+                    }
+                  }
+                );
+              }
+            }
+          );
+        }
+      }
+    );
+  } catch (error) {
+    res.status(400).send({
+      status: false,
+      message: error.message,
+    });
+  }
+});
+
 router.get("/studentFromSchool", auth, async (req, res) => {
   try {
     await connection.query(
@@ -387,6 +556,35 @@ router.get("/studentFromSchool", auth, async (req, res) => {
             res.status(404).send({
               status: false,
               message: "Students not found",
+            });
+          } else res.status(200).send(results);
+        }
+      }
+    );
+  } catch (error) {
+    res.status(400).send({
+      status: false,
+      message: error.message,
+    });
+  }
+});
+
+router.get("/teacherFromSchool", auth, async (req, res) => {
+  try {
+    await connection.query(
+      "SELECT * FROM teacher_profile WHERE teacher_id in (SELECT teacher_id From teacher_with_school WHERE user_id = ?)",
+      req.user_id,
+      (err, results, fields) => {
+        if (err) {
+          res.status(500).send({
+            status: false,
+            message: err.sqlMessage,
+          });
+        } else {
+          if (results.length === 0) {
+            res.status(404).send({
+              status: false,
+              message: "Teachers not found",
             });
           } else res.status(200).send(results);
         }
