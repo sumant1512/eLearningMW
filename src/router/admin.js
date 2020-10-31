@@ -348,6 +348,39 @@ router.post("/assignSubjectToClass", auth, async (req, res) => {
   }
 });
 
+//Assign teacher to class and subject
+router.post("/tagSubjectToTeacher", auth, async (req, res) => {
+  try {
+    let teacherDetails = [];
+    console.log(req.body);
+    Array.from(req.body.classId.split(","), Number).forEach((id) => {
+      teacherDetails.push([req.user_id, id, req.body.subjectId, new Date()]);
+    });
+    // connection.query(
+    //   "INSERT INTO teacher_with_class_subject VALUES ?",
+    //   [teacherDetails],
+    //   (err, results, fields) => {
+    //     if (err) {
+    //       res.status(500).send({
+    //         status: false,
+    //         message: err.sqlMessage,
+    //       });
+    //     } else {
+    //       res.status(200).send({
+    //         status: true,
+    //         message: "Teacher Tagged",
+    //       });
+    //     }
+    //   }
+    // );
+  } catch (error) {
+    res.status(400).send({
+      status: false,
+      message: error.message,
+    });
+  }
+});
+
 //Fetch all remaining classes,which not assigned that particular subject
 router.post("/getClassesOfUnassignedSubjects", auth, async (req, res) => {
   try {
