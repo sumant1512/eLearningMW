@@ -351,28 +351,30 @@ router.post("/assignSubjectToClass", auth, async (req, res) => {
 //Assign teacher to class and subject
 router.post("/tagSubjectToTeacher", auth, async (req, res) => {
   try {
-    let teacherDetails = [];
-    console.log(req.body);
-    Array.from(req.body.classId.split(","), Number).forEach((id) => {
-      teacherDetails.push([req.user_id, id, req.body.subjectId, new Date()]);
-    });
-    // connection.query(
-    //   "INSERT INTO teacher_with_class_subject VALUES ?",
-    //   [teacherDetails],
-    //   (err, results, fields) => {
-    //     if (err) {
-    //       res.status(500).send({
-    //         status: false,
-    //         message: err.sqlMessage,
-    //       });
-    //     } else {
-    //       res.status(200).send({
-    //         status: true,
-    //         message: "Teacher Tagged",
-    //       });
-    //     }
-    //   }
-    // );
+    let subjectDetails = {
+      user_id: req.user_id,
+      class_id: req.body.classId,
+      subject_id: req.body.subjectId,
+      teacher_id: req.body.teacherId,
+      assinged_on: new Date(),
+    };
+    connection.query(
+      "INSERT INTO teacher_with_class_subject set ?",
+      subjectDetails,
+      (err, results, fields) => {
+        if (err) {
+          res.status(500).send({
+            status: false,
+            message: err.sqlMessage,
+          });
+        } else {
+          res.status(200).send({
+            status: true,
+            message: "Teacher Tagged",
+          });
+        }
+      }
+    );
   } catch (error) {
     res.status(400).send({
       status: false,
