@@ -587,44 +587,52 @@ router.get("/teacherFromSchool", auth, async (req, res) => {
     await connection.query(
       "SELECT * FROM teacher_profile WHERE teacher_id in (SELECT teacher_id From teacher_with_school WHERE user_id = ?)",
       req.user_id,
-      (err, teacherResult, fields) => {
+      (err, result, fields) => {
         if (err) {
           res.status(500).send({
             status: false,
             message: err.sqlMessage,
           });
         } else {
-          if (teacherResult.length === 0) {
+          if (result.length === 0) {
             res.status(404).send({
               status: false,
               message: "Teachers not found",
             });
           } else {
-            connection.query(
-              "SELECT class.class_name, subjects.subject_name, teacher_with_class_subject.* From class, subjects, teacher_with_class_subject WHERE class.class_id = teacher_with_class_subject.class_id AND subjects.subject_id = teacher_with_class_subject.subject_id AND user_id = ?",
-              req.user_id,
-              (err, results, fields) => {
-                if (err) {
-                  res.status(500).send({
-                    status: false,
-                    message: err.sqlMessage,
-                  });
-                } else {
-                  if (results.length === 0) {
-                    teacherData = {
-                      teacher_list: teacherResult,
-                    };
-                    res.status(200).send(teacherData);
-                  } else {
-                    teacherData = {
-                      teacher_list: teacherResult,
-                      assinged_class_subject: results,
-                    };
-                    res.status(200).send(teacherData);
-                  }
-                }
-              }
-            );
+            res.status(200).send(result);
+          }
+        }
+      }
+    );
+  } catch (error) {
+    res.status(400).send({
+      status: false,
+      message: error.message,
+    });
+  }
+});
+
+// this api is to get subject tagged with teacher
+router.get("/getTaggedSubjectWithTeacher", auth, async (req, res) => {
+  try {
+    await connection.query(
+      "SELECT class.class_name, subjects.subject_name, teacher_with_class_subject.* From class, subjects, teacher_with_class_subject WHERE class.class_id = teacher_with_class_subject.class_id AND subjects.subject_id = teacher_with_class_subject.subject_id AND user_id = ?",
+      req.user_id,
+      (err, result, fields) => {
+        if (err) {
+          res.status(500).send({
+            status: false,
+            message: err.sqlMessage,
+          });
+        } else {
+          if (result.length === 0) {
+            res.status(404).send({
+              status: false,
+              message: "Tagged subject not found",
+            });
+          } else {
+            res.status(200).send(result);
           }
         }
       }
